@@ -166,6 +166,14 @@ Slots:
 
 (defmethod package-build--get-commit ((rcp package-directory-recipe)))
 
+(defmethod package-build--get-timestamp ((_rcp package-directory-recipe) _rev)
+  (time-convert (current-time) 'integer))
+
+(defmethod package-build--get-commit-time ((rcp package-directory-recipe) rev)
+  (package-build--get-timestamp rcp rev))
+
+
+
 (defvar cask-source-mapping
   '((gnu          . "https://elpa.gnu.org/packages/")
     (melpa        . "https://melpa.org/packages/")
