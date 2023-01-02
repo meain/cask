@@ -161,10 +161,22 @@ Slots:
 (defclass package-directory-recipe (package-recipe)
   ((dir           :initarg :dir   :initform ".")))
 
-(defmethod package-recipe--working-tree ((rcp package-directory-recipe))
+(cl-defmethod package-recipe--working-tree ((rcp package-directory-recipe))
   (oref rcp dir))
 
-(defmethod package-build--get-commit ((rcp package-directory-recipe)))
+(cl-defmethod package-build--get-commit ((rcp package-directory-recipe)))
+
+(cl-defmethod package-build--checkout ((rcp package-directory-recipe)))
+
+(cl-defmethod package-build--get-timestamp ((_rcp package-directory-recipe) _rev)
+  (let ((now (current-time)))
+    (logior (lsh (car now) 16) (cadr now))))
+
+(cl-defmethod package-build--get-commit-time ((rcp package-directory-recipe) rev)
+  (package-build--get-timestamp rcp rev))
+
+(cl-defmethod package-build--get-timestamp-version ((rcp package-directory-recipe))
+   (list "-" (package-build--get-timestamp rcp nil)))
 
 (defvar cask-source-mapping
   '((gnu          . "https://elpa.gnu.org/packages/")
@@ -353,7 +365,8 @@ This function returns the path to the package file."
     (cask-print "cloning\e[F\n")
     (let ((version (package-build--checkout rcp)))
       (cask-print "building\e[F\n")
-      (package-build--package rcp version)
+      (package-build--select-version rcp)
+      (package-build--package rcp)
       (let ((pattern (format "%s-%s.*" name version)))
         (--first (s-match ".*\\.\\(tar\\|el\\)" it)
                  (f-glob pattern cask-tmp-packages-path))))))
@@ -1023,7 +1036,8 @@ a directory specified by `cask-dist-path' in the BUNDLE path."
             ;; This assumes only package files are written. For these files
             ;; there's practically no reason to use any other coding.
             (buffer-file-coding-system 'utf-8-unix))
-        (package-build--package rcp version)))))
+        (package-build--select-version rcp)
+        (package-build--package rcp)))))
 
 (provide 'cask)
 
